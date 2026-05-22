@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick-Commerce Product Analytics · Neha Tulshyan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2433;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8eaf0;
+    --muted: #8b90a0;
+    --hint: #555a6a;
+    --blue: #4d9cf8;
+    --blue-dim: rgba(77,156,248,0.12);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.1);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.1);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.1);
+    --teal: #2dd4bf;
+    --purple: #a78bfa;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #4d9cf8, #a78bfa); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: #fff; flex-shrink: 0; }
+  .header-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .badge { font-size: 11px; padding: 4px 10px; border-radius: 99px; font-weight: 500; border: 1px solid; }
+  .badge-blue { background: var(--blue-dim); color: var(--blue); border-color: rgba(77,156,248,0.25); }
+  .badge-green { background: var(--green-dim); color: var(--green); border-color: rgba(74,222,128,0.2); }
+  .linkedin-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); text-decoration: none; font-weight: 500; transition: color 0.2s, border-color 0.2s; }
+  .linkedin-btn:hover { color: var(--text); border-color: var(--blue); }
+
+  /* LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 40px 60px; }
+
+  /* INTRO */
+  .intro { margin-bottom: 32px; }
+  .intro h1 { font-size: 26px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .intro p { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 680px; }
+  .intro-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* SECTION */
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hint); margin-bottom: 14px; }
+
+  /* METRICS ROW */
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .metric-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; margin-bottom: 6px; }
+  .metric-delta { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+
+  /* GRID */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .full-col { margin-bottom: 20px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .card-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+  /* FUNNEL */
+  .funnel-row { margin-bottom: 11px; }
+  .funnel-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .funnel-meta-right { font-weight: 500; color: var(--text); }
+  .funnel-track { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .funnel-fill { height: 8px; border-radius: 99px; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; margin-bottom: 12px; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* COHORT */
+  .cohort-tabs { display: flex; gap: 6px; }
+  .ctab { font-size: 12px; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .ctab.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  table.cohort { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.cohort th { font-size: 11px; font-weight: 500; color: var(--muted); text-align: center; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  table.cohort th:first-child { text-align: left; }
+  table.cohort td { text-align: center; padding: 9px 6px; border-bottom: 1px solid var(--border); }
+  table.cohort td:first-child { text-align: left; color: var(--muted); font-size: 12px; }
+  .cell { display: inline-block; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 500; font-size: 12px; min-width: 48px; }
+
+  /* AB */
+  .ab-stats { display: flex; gap: 32px; margin-top: 18px; flex-wrap: wrap; }
+  .ab-stat { }
+  .ab-stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .ab-stat-value { font-size: 20px; font-weight: 600; color: var(--text); }
+  .ab-stat-value.positive { color: var(--green); }
+
+  /* INSIGHTS */
+  .insights-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .insight-card { border-radius: var(--radius); padding: 18px 20px; border: 1px solid; }
+  .insight-card.blue { background: var(--blue-dim); border-color: rgba(77,156,248,0.2); }
+  .insight-card.green { background: var(--green-dim); border-color: rgba(74,222,128,0.18); }
+  .insight-card.amber { background: var(--amber-dim); border-color: rgba(251,191,36,0.18); }
+  .insight-icon { font-size: 20px; margin-bottom: 10px; }
+  .insight-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .insight-card.blue .insight-title { color: var(--blue); }
+  .insight-card.green .insight-title { color: var(--green); }
+  .insight-card.amber .insight-title { color: var(--amber); }
+  .insight-body { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* FOOTER */
+  .footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; font-size: 12px; color: var(--hint); }
+  .footer a { color: var(--blue); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 768px) {
+    .main { padding: 20px 16px 48px; }
+    .header { padding: 14px 16px; }
+    .metrics-row { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .insights-row { grid-template-columns: 1fr; }
+    .header-title { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="avatar">NT</div>
+    <div>
+      <div class="header-title">Quick-Commerce Product Analytics</div>
+      <div class="header-sub">Neha Tulshyan · Pune cluster simulation · Apr 2024</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-green">● Live project</span>
+    <span class="badge badge-blue">Product Analyst</span>
+    <a href="https://linkedin.com/in/yourprofile" target="_blank" class="linkedin-btn">LinkedIn ↗</a>
+  </div>
+</header>
+
+<main class="main">
+
+  <div class="intro">
+    <h1>Funnel, Retention & Experimentation</h1>
+    <p>A product analytics deep-dive modelling how a quick-commerce company (Zepto / Swiggy Instamart model) should think about acquisition drop-off, cohort retention cliffs, and push notification experimentation. Built to demonstrate product thinking — from SQL aggregation to actionable recommendations.</p>
+    <div class="intro-tags">
+      <span class="tag">Funnel Analysis</span>
+      <span class="tag">Cohort Retention</span>
+      <span class="tag">A/B Testing</span>
+      <span class="tag">Python · Pandas · SciPy</span>
+      <span class="tag">SQL</span>
+      <span class="tag">Statistical Significance</span>
+    </div>
+  </div>
+
+  <div class="section-label">key metrics · Apr 2024</div>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Daily active users</div>
+      <div class="metric-value">48.2K</div>
+      <div class="metric-delta delta-up">↑ 8.3% WoW</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Order conversion</div>
+      <div class="metric-value">6.4%</div>
+      <div class="metric-delta delta-down">↓ 1.2pp MoM</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">D30 retention</div>
+      <div class="metric-value">21%</div>
+      <div class="metric-delta delta-up">↑ 3pp vs prior cohort</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Avg delivery time</div>
+      <div class="metric-value">11.4 min</div>
+      <div class="metric-delta delta-up">↓ 0.8 min WoW</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- FUNNEL -->
+    <div class="card">
+      <div class="card-title">Acquisition funnel</div>
+      <div class="card-sub">App open → order placed · weekly avg · 48K DAU</div>
+      <div id="funnel"></div>
+    </div>
+
+    <!-- ORDER FREQUENCY -->
+    <div class="card">
+      <div class="card-title">Order frequency distribution</div>
+      <div class="card-sub">Orders per user per month · % of user base</div>
+      <div class="legend">
+        <div class="leg-item"><span class="leg-dot" style="background:#4d9cf8"></span>New users</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#4ade80"></span>Retained users</div>
+      </div>
+      <div style="position:relative;height:200px;">
+        <canvas id="freqChart" role="img" aria-label="Bar chart of order frequency for new vs retained users">New users mostly order 1-2x; retained users order 3-5x per month.</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- COHORT TABLE -->
+  <div class="card full-col">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Cohort retention table</div>
+        <div class="card-sub" style="margin-bottom:0">% of users returning by day · Jan–Apr 2024 signup cohorts</div>
+      </div>
+      <div class="cohort-tabs">
+        <button class="ctab active" onclick="switchCohort(this,'pct')">% retained</button>
+        <button class="ctab" onclick="switchCohort(this,'abs')">user count</button>
+      </div>
+    </div>
+    <table class="cohort" id="cohortTable" aria-label="Cohort retention table"></table>
+  </div>
+
+  <!-- AB TEST -->
+  <div class="card full-col">
+    <div class="card-title">A/B test — push notification timing</div>
+    <div class="card-sub">Control: fixed 6pm push · Test: ML-timed dynamic push · n = 22,400 users/arm · 14-day window</div>
+    <div class="legend">
+      <div class="leg-item"><span class="leg-dot" style="background:#555a6a;"></span>Control (fixed 6pm)</div>
+      <div class="leg-item"><span class="leg-dot" style="background:#4d9cf8;"></span>Test (ML-timed)</div>
+    </div>
+    <div style="position:relative;height:220px;">
+      <canvas id="abChart" role="img" aria-label="Line chart comparing control vs test conversion over 14 days">Test arm shows +1.41pp lift by day 14.</canvas>
+    </div>
+    <div class="ab-stats">
+      <div class="ab-stat"><div class="ab-stat-label">Conversion lift</div><div class="ab-stat-value positive">+1.41pp</div></div>
+      <div class="ab-stat"><div class="ab-stat-label">p-value</div><div class="ab-stat-value">0.023</div></div>
+      <div class="ab-stat"><div class="ab-stat-label">Statistical power</div><div class="ab-stat-value">82%</div></div>
+      <div class="ab-stat"><div class="ab-stat-label">Incremental orders/day</div><div class="ab-stat-value positive">+~630</div></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section-label">insights & recommendations</div>
+  <div class="insights-row">
+    <div class="insight-card blue">
+      <div class="insight-icon">🔍</div>
+      <div class="insight-title">Cart abandonment — fee-reveal problem</div>
+      <div class="insight-body">34% of users who reach the cart don't checkout. Delivery fee appears only at the final step. Recommendation: surface fee earlier or test a free-delivery threshold nudge at cart stage.</div>
+    </div>
+    <div class="insight-card green">
+      <div class="insight-icon">📈</div>
+      <div class="insight-title">D7→D30 retention cliff</div>
+      <div class="insight-body">Retention drops from 51% at D7 to 21% at D30. Users placing 3+ orders in week 1 retain at 2.4× the rate. Recommendation: trigger a targeted incentive at order 2 to pull users across the threshold.</div>
+    </div>
+    <div class="insight-card amber">
+      <div class="insight-icon">⏱</div>
+      <div class="insight-title">Peak-hour SLA risk</div>
+      <div class="insight-body">7–9pm orders average 14.2 min vs 11.4 min overall. Users experiencing >15 min on first order churn at 2.1× rate. Recommendation: dark store staffing optimisation during evening peak.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  Built by <a href="mailto:nehatulshyan2@gmail.com">Neha Tulshyan</a> · Decision Analytics Associate at ZS Associates · <a href="https://linkedin.com/in/yourprofile" target="_blank">LinkedIn</a>
+</footer>
+
+<script>
+// FUNNEL
+const funnelData = [
+  { label: 'App opens', pct: 100, count: '48.2K', color: '#4d9cf8' },
+  { label: 'Browse / search', pct: 76.6, count: '36.9K', color: '#5ba8f8' },
+  { label: 'Add to cart', pct: 29.5, count: '14.2K', color: '#2dd4bf' },
+  { label: 'Reach checkout', pct: 19.5, count: '9.4K', color: '#4ade80' },
+  { label: 'Order placed', pct: 6.4, count: '3.1K', color: '#a78bfa' },
+];
+const funnelEl = document.getElementById('funnel');
+funnelData.forEach(d => {
+  funnelEl.innerHTML += `
+    <div class="funnel-row">
+      <div class="funnel-meta">
+        <span>${d.label}</span>
+        <span class="funnel-meta-right">${d.pct}% <span style="color:var(--hint);font-weight:400">(${d.count})</span></span>
+      </div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+    </div>`;
+});
+
+// FREQUENCY CHART
+new Chart(document.getElementById('freqChart'), {
+  type: 'bar',
+  data: {
+    labels: ['1×','2×','3×','4×','5×','6×+'],
+    datasets: [
+      { label: 'New users', data: [38,28,15,10,6,3], backgroundColor: '#4d9cf8', borderRadius: 4 },
+      { label: 'Retained users', data: [8,14,22,26,19,11], backgroundColor: '#4ade80', borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#8b90a0', font: { size: 11, family: 'DM Sans' } } },
+      y: { ticks: { color: '#8b90a0', font: { size: 11, family: 'DM Sans' }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  }
+});
+
+// COHORT
+const cohorts = [
+  { cohort: 'Jan 2024', size: 8200, d1:68, d7:51, d14:36, d30:21 },
+  { cohort: 'Feb 2024', size: 9100, d1:71, d7:53, d14:38, d30:22 },
+  { cohort: 'Mar 2024', size: 11400, d1:69, d7:55, d14:40, d30:24 },
+  { cohort: 'Apr 2024', size: 13200, d1:73, d7:57, d14:42, d30:null },
+];
+function heatStyle(v) {
+  if (v === null) return 'background:rgba(255,255,255,0.05);color:#555a6a';
+  if (v >= 60) return 'background:rgba(74,222,128,0.18);color:#4ade80';
+  if (v >= 35) return 'background:rgba(77,156,248,0.18);color:#4d9cf8';
+  if (v >= 18) return 'background:rgba(251,191,36,0.15);color:#fbbf24';
+  return 'background:rgba(248,113,113,0.15);color:#f87171';
+}
+let mode = 'pct';
+function renderCohort() {
+  const t = document.getElementById('cohortTable');
+  let html = `<thead><tr><th>Cohort</th><th>Size</th><th>D1</th><th>D7</th><th>D14</th><th>D30</th></tr></thead><tbody>`;
+  cohorts.forEach(r => {
+    const fmt = v => {
+      if (v === null) return `<td><span class="cell" style="${heatStyle(null)}">—</span></td>`;
+      const disp = mode === 'pct' ? v + '%' : Math.round(r.size * v / 100).toLocaleString();
+      return `<td><span class="cell" style="${heatStyle(v)}">${disp}</span></td>`;
+    };
+    html += `<tr><td>${r.cohort}</td><td style="color:var(--muted)">${(r.size/1000).toFixed(1)}K</td>${fmt(r.d1)}${fmt(r.d7)}${fmt(r.d14)}${fmt(r.d30)}</tr>`;
+  });
+  t.innerHTML = html + '</tbody>';
+}
+renderCohort();
+function switchCohort(el, m) {
+  mode = m;
+  document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCohort();
+}
+
+// AB CHART
+const days = Array.from({length:14}, (_,i) => 'D'+(i+1));
+new Chart(document.getElementById('abChart'), {
+  type: 'line',
+  data: {
+    labels: days,
+    datasets: [
+      { label: 'Control', data: [3.8,3.9,4.0,4.1,4.0,4.2,4.1,4.3,4.2,4.4,4.3,4.5,4.4,4.5], borderColor: '#555a6a', borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, fill: false },
+      { label: 'Test', data: [3.8,4.1,4.3,4.5,4.7,4.8,5.0,5.2,5.4,5.5,5.6,5.7,5.8,5.9], borderColor: '#4d9cf8', borderWidth: 2, pointRadius: 0, fill: { target: 'origin', above: 'rgba(77,156,248,0.06)' } }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#8b90a0', font: { size: 11, family: 'DM Sans' } } },
+      y: { min: 3, max: 7, ticks: { color: '#8b90a0', font: { size: 11, family: 'DM Sans' }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
